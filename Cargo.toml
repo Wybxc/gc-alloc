@@ -1,0 +1,13 @@
+[package]
+name = "bdwgc-box"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.72.1"
+system-deps = "7"
+
+[package.metadata.system-deps]
+libgc = { version = "8", fallback-names = ["bdw-gc"] }
