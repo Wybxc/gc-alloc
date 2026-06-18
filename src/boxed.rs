@@ -112,7 +112,7 @@ impl<T> Deref for GcBox<T> {
 unsafe impl<T: ReprC> ReprC for GcBox<T> {
     type CLayout = *mut <T as ReprC>::CLayout;
 
-    fn is_valid(it: &'_ Self::CLayout) -> bool {
+    fn is_valid(it: &Self::CLayout) -> bool {
         NonNull::<T>::is_valid(it)
     }
 }
