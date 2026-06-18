@@ -52,7 +52,7 @@ impl<T> GcBox<T> {
     }
 
     /// # Safety
-    /// If `ptr` is a GC-managed pointer, it should point to a valid object of type `T`.
+    /// If `ptr` is a GC-managed pointer, it should point to a valid object of type `T` and be properly aligned.
     pub unsafe fn from_raw(ptr: *mut T) -> Option<Self> {
         let ptr = NonNull::new(ptr)?;
         if unsafe { gc::GC_is_heap_ptr(ptr.as_ptr() as *const c_void) != 0 } {
@@ -82,6 +82,6 @@ unsafe impl<T: ReprC> ReprC for GcBox<T> {
     type CLayout = *mut <T as ReprC>::CLayout;
 
     fn is_valid(it: &Self::CLayout) -> bool {
-        NonNull::<T>::is_valid(it)
+        NonNull::<T>::is_valid(it) && unsafe { gc::GC_is_heap_ptr(*it as *const c_void) != 0 }
     }
 }
