@@ -11,33 +11,10 @@ pub struct GcBox<T>(NonNull<T>);
 
 impl<T> GcBox<T> {
     pub fn new(val: T) -> Self {
-        let ptr = unsafe { gc::GC_malloc(std::mem::size_of::<T>()) as *mut T };
+        let ptr = unsafe {
+            gc::GC_memalign(std::mem::size_of::<T>(), std::mem::align_of::<T>()) as *mut T
+        };
         let ptr = NonNull::new(ptr).expect("GC_malloc failed");
-        unsafe { ptr.write(val) };
-
-        extern "C" fn finalizer<T>(obj: *mut c_void, _: *mut c_void) {
-            let ptr = obj as *mut T;
-            unsafe { std::ptr::drop_in_place(ptr) };
-        }
-
-        unsafe {
-            gc::GC_register_finalizer(
-                ptr.as_ptr() as *mut std::ffi::c_void,
-                Some(finalizer::<T>),
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-            );
-        }
-
-        GcBox(ptr)
-    }
-
-    /// # Safety
-    /// `val` must not contain any pointers to GC-managed memory.
-    pub unsafe fn new_atomic(val: T) -> Self {
-        let ptr = unsafe { gc::GC_malloc_atomic(std::mem::size_of::<T>()) as *mut T };
-        let ptr = NonNull::new(ptr).expect("GC_malloc_atomic failed");
         unsafe { ptr.write(val) };
 
         extern "C" fn finalizer<T>(obj: *mut c_void, _: *mut c_void) {
@@ -62,18 +39,10 @@ impl<T> GcBox<T> {
     where
         T: Copy,
     {
-        let ptr = unsafe { gc::GC_malloc(std::mem::size_of::<T>()) as *mut T };
+        let ptr = unsafe {
+            gc::GC_memalign(std::mem::size_of::<T>(), std::mem::align_of::<T>()) as *mut T
+        };
         let ptr = NonNull::new(ptr).expect("GC_malloc failed");
-        unsafe { ptr.write(val) };
-        GcBox(ptr)
-    }
-
-    pub fn new_atomic_copy(val: T) -> Self
-    where
-        T: Copy,
-    {
-        let ptr = unsafe { gc::GC_malloc_atomic(std::mem::size_of::<T>()) as *mut T };
-        let ptr = NonNull::new(ptr).expect("GC_malloc_atomic failed");
         unsafe { ptr.write(val) };
         GcBox(ptr)
     }
