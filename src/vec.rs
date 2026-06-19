@@ -79,14 +79,6 @@ impl<T> GcVec<T> {
 }
 
 impl<T> GcVec<T> {
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn len(&self) -> usize {
-        unsafe { *self.0.len() }
-    }
-
     pub fn as_ptr(&self) -> *mut T {
         self.0.as_ptr()
     }
