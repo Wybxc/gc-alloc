@@ -7,9 +7,9 @@ use crate::gc;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
-pub struct GcBox<T>(NonNull<T>);
+pub struct Gc<T>(NonNull<T>);
 
-impl<T> GcBox<T> {
+impl<T> Gc<T> {
     pub fn new(val: T) -> Self {
         let ptr = unsafe {
             gc::GC_memalign(std::mem::size_of::<T>(), std::mem::align_of::<T>()) as *mut T
@@ -32,7 +32,7 @@ impl<T> GcBox<T> {
             );
         }
 
-        GcBox(ptr)
+        Gc(ptr)
     }
 
     pub fn new_copy(val: T) -> Self
@@ -44,7 +44,7 @@ impl<T> GcBox<T> {
         };
         let ptr = NonNull::new(ptr).expect("GC_malloc failed");
         unsafe { ptr.write(val) };
-        GcBox(ptr)
+        Gc(ptr)
     }
 
     pub fn as_ptr(&self) -> *mut T {
@@ -56,20 +56,20 @@ impl<T> GcBox<T> {
     pub unsafe fn from_raw(ptr: *mut T) -> Option<Self> {
         let ptr = NonNull::new(ptr)?;
         if unsafe { gc::GC_is_heap_ptr(ptr.as_ptr() as *const c_void) != 0 } {
-            Some(GcBox(ptr))
+            Some(Gc(ptr))
         } else {
             None
         }
     }
 }
 
-impl<T> AsRef<T> for GcBox<T> {
+impl<T> AsRef<T> for Gc<T> {
     fn as_ref(&self) -> &T {
         unsafe { self.0.as_ref() }
     }
 }
 
-impl<T> Deref for GcBox<T> {
+impl<T> Deref for Gc<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -78,7 +78,7 @@ impl<T> Deref for GcBox<T> {
 }
 
 #[cfg(feature = "safer-ffi")]
-unsafe impl<T: ReprC> ReprC for GcBox<T> {
+unsafe impl<T: ReprC> ReprC for Gc<T> {
     type CLayout = *mut <T as ReprC>::CLayout;
 
     fn is_valid(it: &Self::CLayout) -> bool {

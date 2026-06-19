@@ -13,4 +13,4 @@ pub fn init() {
     }
 }
 
-pub use boxed::GcBox;
+pub use boxed::Gc;
