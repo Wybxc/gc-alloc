@@ -40,11 +40,7 @@ impl<T> Gc<T> {
         }
     }
 
-    pub fn as_ptr(&self) -> *const T {
-        self.0.as_ptr()
-    }
-
-    pub fn as_mut_ptr(&mut self) -> *mut T {
+    pub fn as_ptr(&self) -> *mut T {
         self.0.as_ptr()
     }
 
