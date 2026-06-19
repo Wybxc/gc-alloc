@@ -23,25 +23,16 @@ consume_box (
     int32_t * gc);
 
 /** <No documentation available> */
-typedef struct GcVec_int32 {
-    /** <No documentation available> */
-    int32_t * ptr;
-
-    /** <No documentation available> */
-    size_t cap;
-} GcVec_int32_t;
-
-/** <No documentation available> */
 int32_t
 consume_vec (
-    GcVec_int32_t vec);
+    int32_t * vec);
 
 /** <No documentation available> */
 int32_t *
 create_box (void);
 
 /** <No documentation available> */
-GcVec_int32_t
+int32_t *
 create_vec (void);
 
 

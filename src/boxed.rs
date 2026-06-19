@@ -1,12 +1,11 @@
 use std::{ffi::c_void, ops::Deref, ptr::NonNull};
 
 #[cfg(feature = "safer-ffi")]
-use safer_ffi::derive_ReprC;
+use safer_ffi::layout::ReprC;
 
 use crate::gc;
 
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "safer-ffi", derive_ReprC)]
 #[repr(transparent)]
 pub struct Gc<T>(NonNull<T>);
 
@@ -38,8 +37,18 @@ impl<T> Gc<T> {
         Gc(ptr)
     }
 
-    pub fn as_ptr(&self) -> *mut T {
+    pub fn as_ptr(&self) -> *const T {
         self.0.as_ptr()
+    }
+
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self.0.as_ptr()
+    }
+
+    /// # Safety
+    /// If the returned reference is send to another thread, the caller must ensure that GC has been initialized in that thread.
+    pub unsafe fn as_ref_static<'any>(&self) -> &'any T {
+        unsafe { self.0.as_ref() }
     }
 
     /// # Safety
@@ -65,5 +74,14 @@ impl<T> Deref for Gc<T> {
 
     fn deref(&self) -> &Self::Target {
         unsafe { self.0.as_ref() }
+    }
+}
+
+#[cfg(feature = "safer-ffi")]
+unsafe impl<T: ReprC> ReprC for Gc<T> {
+    type CLayout = *mut <T as ReprC>::CLayout;
+
+    fn is_valid(it: &'_ Self::CLayout) -> bool {
+        !it.is_null() && it.is_aligned() && unsafe { gc::GC_is_heap_ptr(*it as *const c_void) != 0 }
     }
 }
