@@ -17,6 +17,11 @@ impl<T> Gc<T> {
         let ptr = NonNull::new(ptr).expect("GC_malloc failed");
         unsafe { ptr.write(val) };
 
+        Self::register_finalizer(ptr.as_ptr());
+        Gc(ptr)
+    }
+
+    fn register_finalizer(ptr: *mut T) {
         if std::mem::needs_drop::<T>() {
             extern "C" fn finalizer<T>(obj: *mut c_void, _: *mut c_void) {
                 let ptr = obj as *mut T;
@@ -25,7 +30,7 @@ impl<T> Gc<T> {
 
             unsafe {
                 gc::GC_register_finalizer(
-                    ptr.as_ptr() as *mut std::ffi::c_void,
+                    ptr as *mut std::ffi::c_void,
                     Some(finalizer::<T>),
                     std::ptr::null_mut(),
                     std::ptr::null_mut(),
@@ -33,8 +38,6 @@ impl<T> Gc<T> {
                 );
             }
         }
-
-        Gc(ptr)
     }
 
     pub fn as_ptr(&self) -> *const T {
