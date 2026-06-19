@@ -1,11 +1,12 @@
 use std::{ffi::c_void, ops::Deref, ptr::NonNull};
 
 #[cfg(feature = "safer-ffi")]
-use safer_ffi::layout::ReprC;
+use safer_ffi::derive_ReprC;
 
 use crate::gc;
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "safer-ffi", derive_ReprC)]
 #[repr(transparent)]
 pub struct Gc<T>(NonNull<T>);
 
@@ -64,14 +65,5 @@ impl<T> Deref for Gc<T> {
 
     fn deref(&self) -> &Self::Target {
         unsafe { self.0.as_ref() }
-    }
-}
-
-#[cfg(feature = "safer-ffi")]
-unsafe impl<T: ReprC> ReprC for Gc<T> {
-    type CLayout = *mut <T as ReprC>::CLayout;
-
-    fn is_valid(it: &Self::CLayout) -> bool {
-        NonNull::<T>::is_valid(it) && unsafe { gc::GC_is_heap_ptr(*it as *const c_void) != 0 }
     }
 }

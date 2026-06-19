@@ -1,8 +1,12 @@
 use std::{ffi::c_void, ptr::NonNull};
 
+#[cfg(feature = "safer-ffi")]
+use safer_ffi::derive_ReprC;
+
 use crate::gc;
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "safer-ffi", derive_ReprC)]
 #[repr(C)]
 pub struct GcVec<T> {
     ptr: VecPtr<T>,
@@ -109,6 +113,7 @@ impl<T> GcVec<T> {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "safer-ffi", derive_ReprC)]
 #[repr(transparent)]
 pub struct VecPtr<T>(NonNull<T>);
 
