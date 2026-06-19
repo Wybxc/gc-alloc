@@ -6,6 +6,7 @@ mod gc {
 
 mod boxed;
 mod vec;
+mod string;
 
 pub fn init() {
     unsafe {

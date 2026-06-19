@@ -184,10 +184,22 @@ unsafe impl<T: ReprC> ReprC for VecInner<T> {
     type CLayout = *mut <T as ReprC>::CLayout;
 
     fn is_valid(it: &'_ Self::CLayout) -> bool {
+        // 1. The pointer itself should be a non-null and aligned.
+        if it.is_null() || !it.is_aligned() {
+            return false;
+        }
+
+        // 2. The metadata should be aligned and GC-managed.
         let metadata = it.wrapping_byte_sub(std::mem::size_of::<Metadata>()) as *mut Metadata;
-        !it.is_null()
-            && it.is_aligned()
-            && metadata.is_aligned()
-            && unsafe { gc::GC_is_heap_ptr(metadata as *const c_void) != 0 }
+        if !metadata.is_aligned() || unsafe { gc::GC_is_heap_ptr(metadata as *const c_void) != 0 } {
+            return false;
+        }
+
+        // 3. The last element should be GC-managed to ensure the whole buffer is GC-managed.
+        let len = unsafe { metadata.read() };
+        if len == 0 {
+            return true;
+        }
+        unsafe { gc::GC_is_heap_ptr(it.wrapping_add(len - 1) as *const c_void) != 0 }
     }
 }
