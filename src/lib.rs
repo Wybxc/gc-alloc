@@ -5,6 +5,7 @@ mod gc {
 }
 
 mod boxed;
+mod vec;
 
 pub fn init() {
     unsafe {
@@ -14,3 +15,4 @@ pub fn init() {
 }
 
 pub use boxed::Gc;
+pub use vec::GcVec;
