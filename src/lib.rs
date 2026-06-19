@@ -16,4 +16,4 @@ pub fn init() {
 }
 
 pub use boxed::Gc;
-pub use vec::GcVec;
+pub use vec::{GcVec, GcSlice};

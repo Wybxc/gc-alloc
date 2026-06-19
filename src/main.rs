@@ -16,13 +16,8 @@ pub mod ffi_test {
     }
 
     #[ffi_export]
-    fn create_vec() -> GcVec<i32> {
-        GcVec::from_iter([1, 2, 3, 4, 5])
-    }
-
-    #[ffi_export]
-    fn consume_vec(vec: GcVec<i32>) -> i32 {
-        vec.iter().sum()
+    fn create_slice() -> GcSlice<i32> {
+        GcVec::from_iter([1, 2, 3, 4, 5]).as_slice()
     }
 
     pub fn generate_header() -> std::io::Result<()> {

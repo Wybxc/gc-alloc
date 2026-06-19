@@ -23,17 +23,25 @@ consume_box (
     int32_t * gc);
 
 /** <No documentation available> */
-int32_t
-consume_vec (
-    int32_t * vec);
-
-/** <No documentation available> */
 int32_t *
 create_box (void);
 
 /** <No documentation available> */
-int32_t *
-create_vec (void);
+typedef struct GcSlice_int32 {
+    /** \brief
+     *  TODO
+     */
+    int32_t * ptr;
+
+    /** \brief
+     *  TODO
+     */
+    size_t len;
+} GcSlice_int32_t;
+
+/** <No documentation available> */
+GcSlice_int32_t
+create_slice (void);
 
 
 #ifdef __cplusplus
