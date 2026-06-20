@@ -64,7 +64,7 @@ type Metadata = usize;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
-pub struct VecInner<T>(NonNull<T>);
+struct VecInner<T>(NonNull<T>);
 
 impl<T> VecInner<T> {
     fn new(cap: usize) -> Self {
