@@ -1,0 +1,6 @@
+[submodule "vendored/bdwgc"]
+	path = vendored/bdwgc
+	url = https://github.com/bdwgc/bdwgc.git
+[submodule "vendored/libatomic_ops"]
+	path = vendored/libatomic_ops
+	url = https://github.com/bdwgc/libatomic_ops.git
