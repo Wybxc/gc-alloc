@@ -16,7 +16,7 @@ pub mod ffi_test {
     }
 
     #[ffi_export]
-    fn create_slice() -> c_slice::Ref<'static, i32> {
+    fn create_slice() -> c_slice::Mut<'static, i32> {
         gc::vec::from_iter([1, 2, 3, 4, 5]).into()
     }
 

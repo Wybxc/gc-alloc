@@ -2,10 +2,10 @@ use std::{fmt::Write, ptr::NonNull};
 
 use crate::gc;
 
-pub fn from_str(s: &str) -> &'static str {
+pub fn from_str(s: &str) -> &'static mut str {
     let ptr = alloc(s.len());
     unsafe { std::ptr::copy_nonoverlapping(s.as_ptr(), ptr.as_ptr(), s.len()) };
-    unsafe { std::str::from_utf8_unchecked(std::slice::from_raw_parts(ptr.as_ptr(), s.len())) }
+    unsafe { std::str::from_utf8_unchecked_mut(std::slice::from_raw_parts_mut(ptr.as_ptr(), s.len())) }
 }
 
 pub fn from_iter<I: IntoIterator<Item = char>>(iter: I) -> &'static str {
