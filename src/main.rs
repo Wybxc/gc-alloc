@@ -6,13 +6,13 @@ pub mod ffi_test {
     use safer_ffi::prelude::*;
 
     #[ffi_export]
-    fn create_box() -> Ref<'static, i32> {
-        Ref::alloc(42)
+    fn create_box() -> &'static i32 {
+        alloc_ref(42)
     }
 
     #[ffi_export]
-    fn consume_box(i: Ref<'_, i32>) -> i32 {
-        *i.as_ref()
+    fn consume_box(i: &'_ i32) -> i32 {
+        *i
     }
 
     #[ffi_export]

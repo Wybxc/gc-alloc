@@ -15,5 +15,5 @@ pub fn init() {
     }
 }
 
-pub use boxed::Ref;
+pub use boxed::alloc_ref;
 pub use vec::{GcSlice, GcVec};
