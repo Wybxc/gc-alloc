@@ -26,6 +26,10 @@ consume_box (
 int32_t const *
 create_box (void);
 
+/** <No documentation available> */
+char const *
+create_cstr (void);
+
 /** \brief
  *  `&'lt [T]` but with a guaranteed `#[repr(C)]` layout.
  *

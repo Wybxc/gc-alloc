@@ -25,6 +25,11 @@ pub mod ffi_test {
         gc::string::format!("Hello, world!").into()
     }
 
+    #[ffi_export]
+    fn create_cstr() -> char_p::Ref<'static> {
+        gc::cstring::from_str("Hello, CStr!").unwrap().into()
+    }
+
     pub fn generate_header() -> std::io::Result<()> {
         let out = PathBuf::from(env!("CARGO_MANIFEST_PATH"));
         let out = out.parent().unwrap().join("ffi.h");
