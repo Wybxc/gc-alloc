@@ -3,6 +3,8 @@ name = "gc-alloc"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
+repository = "https://github.com/Wybxc/gc-alloc"
+description = "A Rust library for garbage-collected memory allocation using libgc (bdwgc)."
 
 [dependencies]
 
