@@ -2,12 +2,12 @@
 pub mod ffi_test {
     use std::path::PathBuf;
 
-    use bdwgc_box::*;
+    use bdwgc_box as gc;
     use safer_ffi::prelude::*;
 
     #[ffi_export]
     fn create_box() -> &'static i32 {
-        alloc_ref(42)
+        gc::boxed::alloc(42)
     }
 
     #[ffi_export]
@@ -16,8 +16,13 @@ pub mod ffi_test {
     }
 
     #[ffi_export]
-    fn create_slice() -> GcSlice<i32> {
-        GcVec::from_iter([1, 2, 3, 4, 5]).as_slice()
+    fn create_slice() -> c_slice::Ref<'static, i32> {
+        gc::vec::from_iter([1, 2, 3, 4, 5]).into()
+    }
+
+    #[ffi_export]
+    fn create_string() -> str::Ref<'static> {
+        gc::string::format!("Hello, world!").into()
     }
 
     pub fn generate_header() -> std::io::Result<()> {

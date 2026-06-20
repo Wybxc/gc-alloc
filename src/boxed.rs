@@ -2,7 +2,7 @@ use std::{ffi::c_void, ptr::NonNull};
 
 use crate::gc;
 
-pub fn alloc_ref<T>(val: T) -> &'static T {
+pub fn alloc<T>(val: T) -> &'static T {
     let ptr =
         unsafe { gc::GC_memalign(std::mem::size_of::<T>(), std::mem::align_of::<T>()) as *mut T };
     let ptr = NonNull::new(ptr).expect("GC_malloc failed");

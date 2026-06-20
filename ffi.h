@@ -26,22 +26,75 @@ consume_box (
 int32_t const *
 create_box (void);
 
-/** <No documentation available> */
-typedef struct GcSlice_int32 {
+/** \brief
+ *  `&'lt [T]` but with a guaranteed `#[repr(C)]` layout.
+ *
+ *  # C layout (for some given type T)
+ *
+ *  ```c
+ *  typedef struct {
+ *  // Cannot be NULL
+ *  T * ptr;
+ *  size_t len;
+ *  } slice_T;
+ *  ```
+ *
+ *  # Nullable pointer?
+ *
+ *  If you want to support the above typedef, but where the `ptr` field is
+ *  allowed to be `NULL` (with the contents of `len` then being undefined)
+ *  use the `Option< slice_ptr<_> >` type.
+ */
+typedef struct slice_ref_int32 {
     /** \brief
-     *  TODO
+     *  Pointer to the first element (if any).
      */
-    int32_t * ptr;
+    int32_t const * ptr;
 
     /** \brief
-     *  TODO
+     *  Element count
      */
     size_t len;
-} GcSlice_int32_t;
+} slice_ref_int32_t;
 
 /** <No documentation available> */
-GcSlice_int32_t
+slice_ref_int32_t
 create_slice (void);
+
+/** \brief
+ *  `&'lt [T]` but with a guaranteed `#[repr(C)]` layout.
+ *
+ *  # C layout (for some given type T)
+ *
+ *  ```c
+ *  typedef struct {
+ *  // Cannot be NULL
+ *  T * ptr;
+ *  size_t len;
+ *  } slice_T;
+ *  ```
+ *
+ *  # Nullable pointer?
+ *
+ *  If you want to support the above typedef, but where the `ptr` field is
+ *  allowed to be `NULL` (with the contents of `len` then being undefined)
+ *  use the `Option< slice_ptr<_> >` type.
+ */
+typedef struct slice_ref_uint8 {
+    /** \brief
+     *  Pointer to the first element (if any).
+     */
+    uint8_t const * ptr;
+
+    /** \brief
+     *  Element count
+     */
+    size_t len;
+} slice_ref_uint8_t;
+
+/** <No documentation available> */
+slice_ref_uint8_t
+create_string (void);
 
 
 #ifdef __cplusplus

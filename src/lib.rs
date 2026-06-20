@@ -4,9 +4,9 @@ mod gc {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
-mod boxed;
-mod string;
-mod vec;
+pub mod boxed;
+pub mod string;
+pub mod vec;
 
 pub fn init() {
     unsafe {
@@ -14,6 +14,3 @@ pub fn init() {
         gc::GC_allow_register_threads();
     }
 }
-
-pub use boxed::alloc_ref;
-pub use vec::{GcSlice, GcVec};
