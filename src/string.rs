@@ -44,7 +44,7 @@ impl Formatter {
     }
 }
 
-impl std::fmt::Write for Formatter {
+impl Write for Formatter {
     #[inline]
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
         let mut cap = self.cap;
