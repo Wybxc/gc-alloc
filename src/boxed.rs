@@ -8,10 +8,10 @@ use crate::gc;
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "safer-ffi", derive_ReprC)]
 #[repr(transparent)]
-pub struct Gc<T>(NonNull<T>);
+pub struct Ref<'a, T>(&'a T);
 
-impl<T> Gc<T> {
-    pub fn new(val: T) -> Self {
+impl<T> Ref<'static, T> {
+    pub fn alloc(val: T) -> Self {
         let ptr = unsafe {
             gc::GC_memalign(std::mem::size_of::<T>(), std::mem::align_of::<T>()) as *mut T
         };
@@ -19,7 +19,7 @@ impl<T> Gc<T> {
         unsafe { ptr.write(val) };
 
         Self::register_finalizer(ptr.as_ptr());
-        Gc(ptr)
+        Ref(unsafe { ptr.as_ref() })
     }
 
     fn register_finalizer(ptr: *mut T) {
@@ -40,29 +40,39 @@ impl<T> Gc<T> {
             }
         }
     }
+}
+
+impl<'a, T> Ref<'a, T> {
+    pub fn new(r: &'a T) -> Self {
+        Ref(r)
+    }
 
     pub fn as_ptr(&self) -> *mut T {
-        self.0.as_ptr()
+        self.0 as *const T as *mut T
+    }
+
+    pub fn as_non_null(&self) -> NonNull<T> {
+        NonNull::from_ref(self.0)
     }
 
     /// # Safety
     /// The pointer must point to a valid object and properly aligned.
     pub unsafe fn from_raw(ptr: *mut T) -> Option<Self> {
         let ptr = NonNull::new(ptr)?;
-        Some(Gc(ptr))
+        Some(Ref(unsafe { ptr.as_ref() }))
     }
 }
 
-impl<T> AsRef<T> for Gc<T> {
+impl<'a, T> AsRef<T> for Ref<'a, T> {
     fn as_ref(&self) -> &T {
-        unsafe { self.0.as_ref() }
+        self.0
     }
 }
 
-impl<T> Deref for Gc<T> {
+impl<'a, T> Deref for Ref<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { self.0.as_ref() }
+        self.0
     }
 }

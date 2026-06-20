@@ -20,10 +20,10 @@ extern "C" {
 /** <No documentation available> */
 int32_t
 consume_box (
-    int32_t * gc);
+    int32_t const * i);
 
 /** <No documentation available> */
-int32_t *
+int32_t const *
 create_box (void);
 
 /** <No documentation available> */
