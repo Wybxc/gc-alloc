@@ -1,18 +1,20 @@
 use std::{fmt::Write, ptr::NonNull};
 
-use crate::gc;
+use crate::{GcToken, gc};
 
-pub fn from_str(s: &str) -> &'static mut str {
+pub fn from_str(_token: &impl GcToken, s: &str) -> &'static mut str {
     let ptr = alloc(s.len());
     unsafe { std::ptr::copy_nonoverlapping(s.as_ptr(), ptr.as_ptr(), s.len()) };
-    unsafe { std::str::from_utf8_unchecked_mut(std::slice::from_raw_parts_mut(ptr.as_ptr(), s.len())) }
+    unsafe {
+        std::str::from_utf8_unchecked_mut(std::slice::from_raw_parts_mut(ptr.as_ptr(), s.len()))
+    }
 }
 
-pub fn from_iter<I: IntoIterator<Item = char>>(iter: I) -> &'static str {
+pub fn from_iter<I: IntoIterator<Item = char>>(token: &impl GcToken, iter: I) -> &'static str {
     let iter = iter.into_iter();
     let (lower, _) = iter.size_hint();
 
-    let mut formatter = Formatter::with_capacity(lower);
+    let mut formatter = Formatter::with_capacity(token, lower);
     for c in iter {
         let _ = formatter.write_char(c);
     }
@@ -26,7 +28,7 @@ pub struct Formatter {
 }
 
 impl Formatter {
-    pub fn new() -> Self {
+    pub fn new(_token: &impl GcToken) -> Self {
         Self {
             buf: NonNull::dangling(),
             len: 0,
@@ -34,7 +36,7 @@ impl Formatter {
         }
     }
 
-    pub fn with_capacity(cap: usize) -> Self {
+    pub fn with_capacity(_token: &impl GcToken, cap: usize) -> Self {
         let buf = if cap == 0 {
             NonNull::dangling()
         } else {
@@ -76,17 +78,11 @@ impl Formatter {
     }
 }
 
-impl Default for Formatter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[macro_export]
 #[doc(hidden)]
 macro_rules! format {
-    ($($arg:tt)*) => {{
-        let mut formatter = $crate::string::Formatter::new();
+    ($token:expr, $($arg:tt)*) => {{
+        let mut formatter = $crate::string::Formatter::new($token);
         let _ = std::fmt::write(&mut formatter, format_args!($($arg)*));
         formatter.finish()
     }};

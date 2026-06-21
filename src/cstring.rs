@@ -1,8 +1,8 @@
 use std::{ffi::CStr, fmt::Write, ptr::NonNull};
 
-use crate::gc;
+use crate::{GcToken, gc};
 
-pub fn from_str(s: &str) -> Result<&'static CStr, NulError> {
+pub fn from_str(_token: &impl GcToken, s: &str) -> Result<&'static CStr, NulError> {
     if let Some(pos) = s.find('\0') {
         return Err(NulError(pos));
     }
@@ -12,18 +12,21 @@ pub fn from_str(s: &str) -> Result<&'static CStr, NulError> {
     Ok(unsafe { CStr::from_ptr(ptr.as_ptr() as *const i8) })
 }
 
-pub fn from_cstr(s: &CStr) -> &'static CStr {
+pub fn from_cstr(_token: &impl GcToken, s: &CStr) -> &'static CStr {
     let bytes = s.to_bytes_with_nul();
     let ptr = alloc(bytes.len());
     unsafe { std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.as_ptr(), bytes.len()) };
     unsafe { CStr::from_ptr(ptr.as_ptr() as *const i8) }
 }
 
-pub fn from_iter<I: IntoIterator<Item = char>>(iter: I) -> Result<&'static CStr, I::IntoIter> {
+pub fn from_iter<I: IntoIterator<Item = char>>(
+    token: &impl GcToken,
+    iter: I,
+) -> Result<&'static CStr, I::IntoIter> {
     let mut iter = iter.into_iter();
     let (lower, _) = iter.size_hint();
 
-    let mut formatter = Formatter::with_capacity(lower);
+    let mut formatter = Formatter::with_capacity(token, lower);
     while let Some(c) = iter.next() {
         if formatter.write_char(c).is_err() {
             return Err(iter);
@@ -39,7 +42,7 @@ pub struct Formatter {
 }
 
 impl Formatter {
-    pub fn new() -> Self {
+    pub fn new(_token: &impl GcToken) -> Self {
         Self {
             buf: NonNull::dangling(),
             len: 0,
@@ -47,7 +50,7 @@ impl Formatter {
         }
     }
 
-    pub fn with_capacity(cap: usize) -> Self {
+    pub fn with_capacity(_token: &impl GcToken, cap: usize) -> Self {
         let buf = if cap == 0 {
             NonNull::dangling()
         } else {
@@ -94,17 +97,11 @@ impl Formatter {
     }
 }
 
-impl Default for Formatter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[macro_export]
 #[doc(hidden)]
 macro_rules! cformat {
-    ($($arg:tt)*) => {{
-        let mut formatter = $crate::cstring::Formatter::new();
+    ($token:expr, $($arg:tt)*) => {{
+        let mut formatter = $crate::cstring::Formatter::new($token);
         std::fmt::write(&mut formatter, format_args!($($arg)*)).expect("Formatting failed");
         formatter.finish()
     }};

@@ -1,8 +1,8 @@
 use std::{ffi::c_void, ptr::NonNull};
 
-use crate::gc;
+use crate::{GcToken, gc};
 
-pub fn alloc<T>(val: T) -> &'static mut T {
+pub fn alloc<T>(_token: &impl GcToken, val: T) -> &'static mut T {
     let ptr =
         unsafe { gc::GC_memalign(std::mem::size_of::<T>(), std::mem::align_of::<T>()) as *mut T };
     let mut ptr = NonNull::new(ptr).expect("GC_malloc failed");

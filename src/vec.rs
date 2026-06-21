@@ -1,8 +1,12 @@
 use std::{ffi::c_void, ptr::NonNull};
 
-use crate::gc;
+use crate::{GcToken, gc};
 
-pub fn from_fn<T>(len: usize, mut f: impl FnMut(usize) -> T) -> &'static mut [T] {
+pub fn from_fn<T>(
+    _token: &impl GcToken,
+    len: usize,
+    mut f: impl FnMut(usize) -> T,
+) -> &'static mut [T] {
     let vec = VecInner::<T>::new(len);
     for i in 0..len {
         unsafe { vec.as_ptr().add(i).write(f(i)) };
@@ -14,11 +18,11 @@ pub fn from_fn<T>(len: usize, mut f: impl FnMut(usize) -> T) -> &'static mut [T]
     unsafe { std::slice::from_raw_parts_mut(vec.as_ptr(), len) }
 }
 
-pub fn repeat<T: Clone>(val: T, len: usize) -> &'static mut [T] {
-    from_fn(len, |_| val.clone())
+pub fn repeat<T: Clone>(token: &impl GcToken, val: T, len: usize) -> &'static mut [T] {
+    from_fn(token, len, |_| val.clone())
 }
 
-pub fn from_iter<T, I: IntoIterator<Item = T>>(iter: I) -> &'static mut [T] {
+pub fn from_iter<T, I: IntoIterator<Item = T>>(_token: &impl GcToken, iter: I) -> &'static mut [T] {
     let iter = iter.into_iter();
     let (lower, _) = iter.size_hint();
 
