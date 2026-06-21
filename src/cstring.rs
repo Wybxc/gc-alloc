@@ -1,28 +1,34 @@
-use std::{ffi::CStr, fmt::Write, ptr::NonNull};
+use std::{
+    ffi::{CStr, c_char},
+    fmt::Write,
+    ptr::NonNull,
+};
 
 use crate::{GcToken, gc};
 
-pub fn from_str(_token: &impl GcToken, s: &str) -> Result<&'static CStr, NulError> {
+pub fn from_str(_token: &impl GcToken, s: &str) -> Result<GcCString, NulError> {
     if let Some(pos) = s.find('\0') {
         return Err(NulError(pos));
     }
     let ptr = alloc(s.len() + 1);
-    unsafe { std::ptr::copy_nonoverlapping(s.as_ptr(), ptr.as_ptr(), s.len()) };
+    unsafe { std::ptr::copy_nonoverlapping(s.as_ptr() as *const c_char, ptr.as_ptr(), s.len()) };
     unsafe { std::ptr::write(ptr.as_ptr().add(s.len()), 0) };
-    Ok(unsafe { CStr::from_ptr(ptr.as_ptr() as *const i8) })
+    Ok(GcCString(unsafe { CStr::from_ptr(ptr.as_ptr()) }.into()))
 }
 
-pub fn from_cstr(_token: &impl GcToken, s: &CStr) -> &'static CStr {
+pub fn from_cstr(_token: &impl GcToken, s: &CStr) -> GcCString {
     let bytes = s.to_bytes_with_nul();
     let ptr = alloc(bytes.len());
-    unsafe { std::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr.as_ptr(), bytes.len()) };
-    unsafe { CStr::from_ptr(ptr.as_ptr() as *const i8) }
+    unsafe {
+        std::ptr::copy_nonoverlapping(bytes.as_ptr() as *const c_char, ptr.as_ptr(), bytes.len())
+    };
+    GcCString(unsafe { CStr::from_ptr(ptr.as_ptr()) }.into())
 }
 
 pub fn from_iter<I: IntoIterator<Item = char>>(
     token: &impl GcToken,
     iter: I,
-) -> Result<&'static CStr, I::IntoIter> {
+) -> Result<GcCString, I::IntoIter> {
     let mut iter = iter.into_iter();
     let (lower, _) = iter.size_hint();
 
@@ -36,7 +42,7 @@ pub fn from_iter<I: IntoIterator<Item = char>>(
 }
 
 pub struct Formatter {
-    buf: NonNull<u8>,
+    buf: NonNull<c_char>,
     len: usize,
     cap: usize,
 }
@@ -78,7 +84,11 @@ impl Write for Formatter {
             self.cap = cap;
         }
         unsafe {
-            std::ptr::copy_nonoverlapping(s.as_ptr(), self.buf.add(self.len).as_ptr(), s.len())
+            std::ptr::copy_nonoverlapping(
+                s.as_ptr() as *const c_char,
+                self.buf.add(self.len).as_ptr(),
+                s.len(),
+            )
         };
         self.len += s.len();
         Ok(())
@@ -86,13 +96,13 @@ impl Write for Formatter {
 }
 
 impl Formatter {
-    pub fn finish(self) -> &'static CStr {
+    pub fn finish(self) -> GcCString {
         if self.len == 0 {
-            return c"";
+            return GcCString(c"".into());
         }
         unsafe {
             std::ptr::write(self.buf.add(self.len).as_ptr(), 0);
-            CStr::from_ptr(self.buf.as_ptr() as *const i8)
+            GcCString(CStr::from_ptr(self.buf.as_ptr() as *const i8).into())
         }
     }
 }
@@ -108,6 +118,29 @@ macro_rules! cformat {
 }
 
 pub use cformat as format;
+
+pub struct GcCString(NonNull<CStr>);
+
+impl GcCString {
+    pub fn as_ptr(&self) -> *mut CStr {
+        self.0.as_ptr()
+    }
+
+    pub fn as_ref<'gc>(&self, _token: &'gc impl GcToken) -> &'gc CStr {
+        unsafe { &*self.as_ptr() }
+    }
+
+    #[allow(clippy::mut_from_ref)]
+    pub fn as_mut<'gc>(&mut self, _token: &'gc impl GcToken) -> &'gc mut CStr {
+        unsafe { &mut *self.as_ptr() }
+    }
+
+    /// # Safety
+    /// The returned reference cannot be used in a thread that is not registered with the GC.
+    pub unsafe fn as_ref_unconstrained(&self) -> &'static mut CStr {
+        unsafe { &mut *self.as_ptr() }
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct NulError(usize);
@@ -126,7 +159,7 @@ impl std::fmt::Display for NulError {
 
 impl std::error::Error for NulError {}
 
-fn alloc(cap: usize) -> NonNull<u8> {
-    let ptr = unsafe { gc::GC_malloc_atomic(cap) as *mut u8 };
+fn alloc(cap: usize) -> NonNull<c_char> {
+    let ptr = unsafe { gc::GC_malloc_atomic(cap) as *mut c_char };
     std::ptr::NonNull::new(ptr).expect("GC_malloc_atomic failed")
 }

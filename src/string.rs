@@ -2,15 +2,16 @@ use std::{fmt::Write, ptr::NonNull};
 
 use crate::{GcToken, gc};
 
-pub fn from_str(_token: &impl GcToken, s: &str) -> &'static mut str {
+pub fn from_str(_token: &impl GcToken, s: &str) -> GcString {
     let ptr = alloc(s.len());
     unsafe { std::ptr::copy_nonoverlapping(s.as_ptr(), ptr.as_ptr(), s.len()) };
-    unsafe {
+    GcString(unsafe {
         std::str::from_utf8_unchecked_mut(std::slice::from_raw_parts_mut(ptr.as_ptr(), s.len()))
-    }
+            .into()
+    })
 }
 
-pub fn from_iter<I: IntoIterator<Item = char>>(token: &impl GcToken, iter: I) -> &'static str {
+pub fn from_iter<I: IntoIterator<Item = char>>(token: &impl GcToken, iter: I) -> GcString {
     let iter = iter.into_iter();
     let (lower, _) = iter.size_hint();
 
@@ -68,13 +69,14 @@ impl Write for Formatter {
 }
 
 impl Formatter {
-    pub fn finish(self) -> &'static str {
+    pub fn finish(self) -> GcString {
         if self.len == 0 {
-            return "";
+            return GcString("".into());
         }
-        unsafe {
+        GcString(unsafe {
             std::str::from_utf8_unchecked(std::slice::from_raw_parts(self.buf.as_ptr(), self.len))
-        }
+                .into()
+        })
     }
 }
 
@@ -89,6 +91,29 @@ macro_rules! format {
 }
 
 pub use crate::format;
+
+pub struct GcString(NonNull<str>);
+
+impl GcString {
+    pub fn as_ptr(&self) -> *mut str {
+        self.0.as_ptr()
+    }
+
+    pub fn as_ref<'gc>(&self, _token: &'gc impl GcToken) -> &'gc str {
+        unsafe { &*self.as_ptr() }
+    }
+
+    #[allow(clippy::mut_from_ref)]
+    pub fn as_mut<'gc>(&mut self, _token: &'gc impl GcToken) -> &'gc mut str {
+        unsafe { &mut *self.as_ptr() }
+    }
+
+    /// # Safety
+    /// The returned reference cannot be used in a thread that is not registered with the GC.
+    pub unsafe fn as_ref_unconstrained(&self) -> &'static mut str {
+        unsafe { &mut *self.as_ptr() }
+    }
+}
 
 fn alloc(cap: usize) -> NonNull<u8> {
     let ptr = unsafe { gc::GC_malloc_atomic(cap) as *mut u8 };

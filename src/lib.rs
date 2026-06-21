@@ -9,7 +9,10 @@ mod gc {
 pub mod boxed;
 pub mod cstring;
 pub mod string;
+mod token;
 pub mod vec;
+
+pub use token::{GcToken, ThreadGuard, ThreadToken};
 
 thread_local! {
     static GC_REGISTERED: Cell<bool> = const { Cell::new(false) };
@@ -23,14 +26,12 @@ pub fn init() -> ThreadToken {
 
     GC_REGISTERED.set(true);
 
-    ThreadToken {
-        _non_send: std::marker::PhantomData,
-    }
+    ThreadToken::new()
 }
 
 pub fn init_thread() -> ThreadGuard {
     assert!(
-        !GC_REGISTERED.get() && unsafe { gc::GC_thread_is_registered() } == 0,
+        unsafe { gc::GC_thread_is_registered() } == 0,
         "Thread is already registered with the GC. "
     );
 
@@ -48,48 +49,7 @@ pub fn init_thread() -> ThreadGuard {
 
     GC_REGISTERED.set(true);
 
-    ThreadGuard {
-        _non_send: std::marker::PhantomData,
-    }
-}
-
-pub trait GcToken: private::Sealed {}
-
-pub struct ThreadToken {
-    _non_send: std::marker::PhantomData<*const ()>,
-}
-
-impl private::Sealed for ThreadToken {}
-impl GcToken for ThreadToken {}
-
-impl ThreadToken {
-    pub fn get() -> Self {
-        Self::try_get()
-            .expect("Thread is not registered with the GC. Please call init_thread() first.")
-    }
-
-    pub fn try_get() -> Option<Self> {
-        if GC_REGISTERED.get() {
-            Some(ThreadToken {
-                _non_send: std::marker::PhantomData,
-            })
-        } else {
-            None
-        }
-    }
-}
-
-pub struct ThreadGuard {
-    _non_send: std::marker::PhantomData<*const ()>,
-}
-
-impl private::Sealed for ThreadGuard {}
-impl GcToken for ThreadGuard {}
-
-impl Drop for ThreadGuard {
-    fn drop(&mut self) {
-        unsafe { gc::GC_unregister_my_thread() };
-    }
+    ThreadGuard::new()
 }
 
 mod private {

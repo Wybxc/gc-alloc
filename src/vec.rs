@@ -2,11 +2,7 @@ use std::{ffi::c_void, ptr::NonNull};
 
 use crate::{GcToken, gc};
 
-pub fn from_fn<T>(
-    _token: &impl GcToken,
-    len: usize,
-    mut f: impl FnMut(usize) -> T,
-) -> &'static mut [T] {
+pub fn from_fn<T>(_token: &impl GcToken, len: usize, mut f: impl FnMut(usize) -> T) -> GcVec<T> {
     let vec = VecInner::<T>::new(len);
     for i in 0..len {
         unsafe { vec.as_ptr().add(i).write(f(i)) };
@@ -15,14 +11,14 @@ pub fn from_fn<T>(
 
     register_finalizer(vec.as_ptr());
 
-    unsafe { std::slice::from_raw_parts_mut(vec.as_ptr(), len) }
+    GcVec(unsafe { std::slice::from_raw_parts_mut(vec.as_ptr(), len).into() })
 }
 
-pub fn repeat<T: Clone>(token: &impl GcToken, val: T, len: usize) -> &'static mut [T] {
+pub fn repeat<T: Clone>(token: &impl GcToken, val: T, len: usize) -> GcVec<T> {
     from_fn(token, len, |_| val.clone())
 }
 
-pub fn from_iter<T, I: IntoIterator<Item = T>>(_token: &impl GcToken, iter: I) -> &'static mut [T] {
+pub fn from_iter<T, I: IntoIterator<Item = T>>(_token: &impl GcToken, iter: I) -> GcVec<T> {
     let iter = iter.into_iter();
     let (lower, _) = iter.size_hint();
 
@@ -43,7 +39,7 @@ pub fn from_iter<T, I: IntoIterator<Item = T>>(_token: &impl GcToken, iter: I) -
 
     register_finalizer(vec.as_ptr());
 
-    unsafe { std::slice::from_raw_parts_mut(vec.as_ptr(), len) }
+    GcVec(unsafe { std::slice::from_raw_parts_mut(vec.as_ptr(), len).into() })
 }
 
 fn register_finalizer<T>(ptr: *mut T) {
@@ -65,6 +61,29 @@ fn register_finalizer<T>(ptr: *mut T) {
                 std::ptr::null_mut(),
             );
         }
+    }
+}
+
+pub struct GcVec<T>(NonNull<[T]>);
+
+impl<T> GcVec<T> {
+    pub fn as_ptr(&self) -> *mut [T] {
+        self.0.as_ptr()
+    }
+
+    pub fn as_ref<'gc>(&self, _token: &'gc impl GcToken) -> &'gc [T] {
+        unsafe { &*self.as_ptr() }
+    }
+
+    #[allow(clippy::mut_from_ref)]
+    pub fn as_mut<'gc>(&mut self, _token: &'gc impl GcToken) -> &'gc mut [T] {
+        unsafe { &mut *self.as_ptr() }
+    }
+
+    /// # Safety
+    /// The returned reference cannot be used in a thread that is not registered with the GC.
+    pub unsafe fn as_ref_unconstrained(&self) -> &'static mut [T] {
+        unsafe { &mut *self.as_ptr() }
     }
 }
 
