@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/Wybxc/gc-alloc/compare/v0.2.0...v0.2.1) - 2026-06-21
+
+### Other
+
+- Require GcToken for boxed::alloc
+- Wrap GC-allocated references in opaque types with token-gated access
+
 ## [0.2.0](https://github.com/Wybxc/gc-alloc/compare/v0.1.1...v0.2.0) - 2026-06-21
 
 ### Other
